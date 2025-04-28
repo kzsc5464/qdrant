@@ -1,7 +1,7 @@
 use api::rest::{SearchGroupsRequestInternal, SearchRequestInternal};
 use segment::types::{Filter, SearchParams, StrictModeConfig};
 
-use super::StrictModeVerification;
+use super::{StrictModeVerification, check_grouping_field};
 use crate::collection::Collection;
 use crate::operations::types::{
     CollectionError, CollectionResult, CoreSearchRequest, SearchRequestBatch,
@@ -94,17 +94,7 @@ impl StrictModeVerification for SearchGroupsRequestInternal {
         strict_mode_config: &StrictModeConfig,
     ) -> CollectionResult<()> {
         // check for unindexed fields targeted by group_by
-        if strict_mode_config.unindexed_filtering_retrieve == Some(false)
-            && !collection.payload_key_is_indexed(&self.group_request.group_by)
-        {
-            return Err(CollectionError::strict_mode(
-                format!(
-                    "Index required but not found for \"{}\"",
-                    self.group_request.group_by
-                ),
-                "Create an index for this key.",
-            ));
-        }
+        check_grouping_field(&self.group_request.group_by, collection, strict_mode_config)?;
         Ok(())
     }
 
